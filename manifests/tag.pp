@@ -3,6 +3,13 @@ define datadog_agent::tag(
   $tag_name = $name,
   $lookup_fact = false,
 ){
+  include datadog_agent
+
+  if $::datadog_agent::agent6_enable {
+    $dst = '/etc/datadog-agent/datadog.yaml'
+  } else {
+    $dst = '/etc/dd-agent/datadog.conf'
+  }
 
   if $lookup_fact{
     $value = getvar($tag_name)
@@ -13,7 +20,7 @@ define datadog_agent::tag(
     } else {
       if $value {
         concat::fragment{ "datadog tag ${tag_name}:${value}":
-          target  => '/etc/dd-agent/datadog.conf',
+          target  => $dst,
           content => "${tag_name}:${value}, ",
           order   => '03',
         }
@@ -21,7 +28,7 @@ define datadog_agent::tag(
     }
   } else {
     concat::fragment{ "datadog tag ${tag_name}":
-      target  => '/etc/dd-agent/datadog.conf',
+      target  => $dst,
       content => "${tag_name}, ",
       order   => '03',
     }

@@ -486,6 +486,7 @@ class datadog_agent(
       'cmd_port' => 5001,
       'conf_path' => $datadog_agent::params::conf6_dir,
       'enable_metadata_collection' => $collect_instance_metadata,
+      'hostname_fqdn' => true,
       'dogstatsd_port' => $dogstatsd_port,
       'dogstatsd_socket' => $dogstatsd_socket,
       'dogstatsd_non_local_traffic' => $non_local_traffic,
@@ -493,16 +494,26 @@ class datadog_agent(
       'log_level' => $log_level,
     }
 
-    file { '/etc/datadog-agent/datadog.yaml':
-      owner   => 'dd-agent',
-      group   => 'dd-agent',
+    concat { '/etc/datadog-agent/datadog.yaml':
+      owner   => $datadog_agent::params::dd_user,
+      group   => $datadog_agent::params::dd_group,
       mode    => '0640',
-      content => template('datadog_agent/datadog6.yaml.erb'),
       notify  => Service[$datadog_agent::params::service_name],
       require => File['/etc/datadog-agent'],
     }
-  }
 
+    concat::fragment{ 'datadog header':
+      target  => '/etc/datadog-agent/datadog.yaml',
+      content => template('datadog_agent/datadog6.yaml.erb'),
+      order   => '01',
+    }
+
+    concat::fragment{ 'datadog tags':
+      target  => '/etc/datadog-agent/datadog.yaml',
+      content => 'tags: ',
+      order   => '02',
+    }
+  }
 
   if $puppet_run_reports {
     class { 'datadog_agent::reports':
